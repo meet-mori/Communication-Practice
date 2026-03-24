@@ -38,8 +38,8 @@ export class MongoService implements OnModuleInit, OnModuleDestroy {
   constructor(private config: ConfigService) {}
 
   async onModuleInit() {
-    const uri = this.config.get<string>('MONGODB_URI') || 'mongodb+srv://Meet_Mori:Meet%4099099@cluster0.zljbnwf.mongodb.net/english_coach';
-    const dbName = this.config.get<string>('MONGODB_DB') || 'english_coach';
+    const uri = 'mongodb+srv://Meet_Mori:Meet%4099099@cluster0.zljbnwf.mongodb.net/english_coach';
+    const dbName = 'english_coach';
 
     this.client = new MongoClient(uri);
     await this.client.connect();
