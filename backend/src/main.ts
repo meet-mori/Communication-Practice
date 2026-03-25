@@ -16,10 +16,12 @@ async function bootstrap() {
 
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
-  app.enableCors({ origin: 'http://localhost:4200' });
-
+  app.enableCors({
+    origin: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+  });
   await app.listen(3000);
-  console.log('✅ Backend running on http://localhost:3000');
+  console.log('✅ Backend running');
 }
 bootstrap();
