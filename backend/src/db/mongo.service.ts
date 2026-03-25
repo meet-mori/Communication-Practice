@@ -38,17 +38,34 @@ export class MongoService implements OnModuleInit, OnModuleDestroy {
   constructor(private config: ConfigService) {}
 
   async onModuleInit() {
-    const uri = 'mongodb+srv://Meet_Mori:Meet%4099099@cluster0.zljbnwf.mongodb.net/english_coach';
-    const dbName = 'english_coach';
+    const uri = this.config.get<string>('MONGODB_URI') || 'mongodb+srv://Meet_Mori:Meet%4099099@cluster0.zljbnwf.mongodb.net/english_coach?retryWrites=true&w=majority';
+    const dbName = this.config.get<string>('MONGODB_DB') || 'english_coach';
 
-    this.client = new MongoClient(uri);
-    await this.client.connect();
-    this.db = this.client.db(dbName);
+    // Sanitize URI for logging to avoid leaking credentials
+    const sanitizedUri = uri.replace(/:([^@/]+)@/, ':****@');
+    console.log(`Connecting to MongoDB: ${sanitizedUri}`);
 
-    await this.users().createIndex({ email: 1 }, { unique: true });
-    await this.sessions().createIndex({ token: 1 }, { unique: true });
-    await this.sessions().createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-    await this.activities().createIndex({ userId: 1, createdAt: -1 });
+    this.client = new MongoClient(uri, {
+      tls: true,
+      family: 4, // Force IPv4 to avoid common issues on cloud platforms like Render
+      serverSelectionTimeoutMS: 10000, 
+      connectTimeoutMS: 10000,
+    });
+
+    try {
+      await this.client.connect();
+      this.db = this.client.db(dbName);
+      console.log('MongoDB connection successful');
+
+      await this.users().createIndex({ email: 1 }, { unique: true });
+      await this.sessions().createIndex({ token: 1 }, { unique: true });
+      await this.sessions().createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+      await this.activities().createIndex({ userId: 1, createdAt: -1 });
+    } catch (error) {
+      console.error('MongoDB connection error:', error.message);
+      // In production, we want to fail fast if DB connection fails
+      throw new Error(`Failed to connect to MongoDB: ${error.message}`);
+    }
   }
 
   async onModuleDestroy() {
