@@ -1,0 +1,30 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --ink: #0f0e0d;
+  --paper: #f5f0e8;
+  --accent: #d4501a;
+  --accent2: #1a6b4a;
+  --accent3: #1a3d6b;
+  --muted: #8a8278;
+  --border: #ddd8cc;
+  --card-bg: #fffdf8;
+}
+
+html, body {
+  height: 100%;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Syne', sans-serif;
+}

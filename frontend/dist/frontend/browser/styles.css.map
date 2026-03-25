@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/styles.css"],
+  "sourcesContent": ["*, *::before, *::after {\n  box-sizing: border-box;\n  margin: 0;\n  padding: 0;\n}\n\n:root {\n  --ink: #0f0e0d;\n  --paper: #f5f0e8;\n  --accent: #d4501a;\n  --accent2: #1a6b4a;\n  --accent3: #1a3d6b;\n  --muted: #8a8278;\n  --border: #ddd8cc;\n  --card-bg: #fffdf8;\n}\n\nhtml, body {\n  height: 100%;\n  background: var(--paper);\n  color: var(--ink);\n  font-family: 'DM Sans', sans-serif;\n  font-size: 16px;\n  line-height: 1.6;\n  -webkit-font-smoothing: antialiased;\n}\n\nh1, h2, h3, h4 {\n  font-family: 'Syne', sans-serif;\n}\n"],
+  "mappings": ";AAAA;AAAG,CAAC;AAAU,CAAC;AACb,cAAY;AACZ,UAAQ;AACR,WAAS;AACX;AAEA;AACE,SAAO;AACP,WAAS;AACT,YAAU;AACV,aAAW;AACX,aAAW;AACX,WAAS;AACT,YAAU;AACV,aAAW;AACb;AAEA;AAAM;AACJ,UAAQ;AACR,cAAY,IAAI;AAChB,SAAO,IAAI;AACX,eAAa,SAAS,EAAE;AACxB,aAAW;AACX,eAAa;AACb,0BAAwB;AAC1B;AAEA;AAAI;AAAI;AAAI;AACV,eAAa,MAAM,EAAE;AACvB;",
+  "names": []
+}

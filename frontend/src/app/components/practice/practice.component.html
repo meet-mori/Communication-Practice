@@ -1,0 +1,384 @@
+<div class="page">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-mark">EC</span>
+        <div class="logo-text">
+          <span class="logo-title">Communication Coach</span>
+          <span class="logo-sub">AI Practice Platform</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <button class="chart-btn" (click)="toggleChart()">
+          📊 {{ showChart ? 'Hide' : 'Progress' }}
+          <span class="session-count" *ngIf="sessions.length">{{ sessions.length }}</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Progress Chart Panel -->
+  <div class="chart-panel" id="progress-chart" *ngIf="showChart">
+    <div class="chart-inner">
+      <div class="chart-top">
+        <div>
+          <h3 class="chart-title">📈 Your Progress</h3>
+          <p class="chart-sub">Score history across all sessions</p>
+        </div>
+        <div class="chart-stats">
+          <div class="stat-box"><span class="stat-val">{{ avgScore || '—' }}</span><span class="stat-lbl">Avg</span></div>
+          <div class="stat-box"><span class="stat-val">{{ bestScore || '—' }}</span><span class="stat-lbl">Best</span></div>
+          <div class="stat-box"><span class="stat-val">{{ sessions.length }}</span><span class="stat-lbl">Sessions</span></div>
+        </div>
+      </div>
+      <div class="bar-chart" *ngIf="sessions.length > 0">
+        <div class="chart-y">
+          <span>10</span><span>8</span><span>6</span><span>4</span><span>2</span><span>0</span>
+        </div>
+        <div class="chart-bars">
+          <div class="bar-col" *ngFor="let s of sessions">
+            <div class="bar-wrap">
+              <span class="bar-score">{{ s.score }}</span>
+              <div class="bar-fill" [style.height]="getBarHeight(s.score)" [style.background]="getBarColor(s.score)"></div>
+            </div>
+            <span class="bar-date">{{ s.date }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="chart-empty" *ngIf="sessions.length === 0">
+        <p>📭 Complete a session to see your progress here!</p>
+      </div>
+      <button class="clear-btn" *ngIf="sessions.length > 0" (click)="clearHistory()">🗑️ Clear History</button>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-inner">
+      <h1 class="hero-title">Better <em>Communication</em> <br>Practice with AI</h1>
+      <p class="hero-desc">Your ultimate AI-powered speaking tutor. Upload your recordings or type text to get a <strong>full communication analysis</strong> live via our 4-agent AI pipeline.</p>
+
+      <!-- Pipeline nodes — light up as agents run -->
+      <div class="pipeline-visual">
+        <ng-container *ngFor="let agent of agents; let i = index">
+          <div class="pipe-node"
+            [class.pipe-idle]="agent.status === 'idle'"
+            [class.pipe-waiting]="agent.status === 'waiting'"
+            [class.pipe-running]="agent.status === 'running'"
+            [class.pipe-done]="agent.status === 'done'">
+            <span class="pipe-icon">{{ agent.icon }}</span>
+            <span>{{ agent.label }}</span>
+            <span class="pipe-tick" *ngIf="agent.status === 'done'">✓</span>
+          </div>
+          <div class="pipe-line"
+            *ngIf="i < agents.length - 1"
+            [class.line-lit]="agent.status === 'done'">
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </section>
+
+  <main class="main">
+    <div class="main-inner">
+
+      <div class="input-card">
+        <label class="input-label">Account</label>
+
+        <div *ngIf="!authUser">
+          <div class="mode-toggle" style="margin-bottom:12px">
+            <button [class.active]="authMode === 'login'" (click)="setAuthMode('login')">Login</button>
+            <button [class.active]="authMode === 'register'" (click)="setAuthMode('register')">Register</button>
+          </div>
+          <input class="auth-input" *ngIf="authMode === 'register'" [(ngModel)]="authName" placeholder="Full name" />
+          <input class="auth-input" [(ngModel)]="authEmail" placeholder="Email" />
+          <input class="auth-input" [(ngModel)]="authPassword" type="password" placeholder="Password (min 6 chars)" />
+          <div class="action-row">
+            <button class="btn-main" (click)="submitAuth()" [disabled]="authBusy || !authEmail || !authPassword">
+              {{ authBusy ? 'Please wait...' : (authMode === 'login' ? 'Login' : 'Create account') }}
+            </button>
+          </div>
+          <div class="error-msg" *ngIf="authError" style="margin-top:12px">{{ authError }}</div>
+        </div>
+
+        <div *ngIf="authUser" class="auth-ok">
+          <p><strong>{{ authUser.name }}</strong> ({{ authUser.email }})</p>
+          <button class="btn-ghost" (click)="logout()">Logout</button>
+        </div>
+      </div>
+
+      <!-- Mode Toggle -->
+      <div class="mode-toggle">
+        <button [class.active]="inputMode === 'text'" (click)="setMode('text')">✏️ &nbsp;Type Text</button>
+        <button [class.active]="inputMode === 'audio'" (click)="setMode('audio')">🎵 &nbsp;Upload MP3</button>
+      </div>
+
+      <!-- TEXT INPUT -->
+      <div class="input-card" *ngIf="inputMode === 'text'">
+        <label class="input-label">Your spoken sentence or paragraph</label>
+        <textarea [(ngModel)]="userText" class="textarea" rows="5"
+          placeholder="Example: I goes to market yesterday for buying vegetable..."></textarea>
+        <div class="action-row">
+          <button class="btn-main" (click)="submitText()" [disabled]="loading || !userText.trim()">
+            {{ loading ? 'Running agents...' : 'Analyze my English →' }}
+          </button>
+          <button class="btn-ghost" (click)="reset()">Clear</button>
+        </div>
+      </div>
+
+      <!-- AUDIO INPUT -->
+      <div class="input-card" *ngIf="inputMode === 'audio'">
+        <label class="input-label">Upload your MP3 recording</label>
+        <label class="drop-zone" for="audioInput" [class.has-file]="!!fileName">
+          <div class="drop-content" *ngIf="!fileName">
+            <div class="drop-icon">🎵</div>
+            <p class="drop-title">Click to choose MP3 file</p>
+            <p class="drop-hint">Max 25MB · MP3 only</p>
+          </div>
+          <div class="drop-content" *ngIf="fileName">
+            <div class="drop-icon">✅</div>
+            <p class="drop-title">{{ fileName }}</p>
+            <p class="drop-hint">Ready to analyze</p>
+          </div>
+        </label>
+        <input id="audioInput" type="file" accept=".mp3,audio/mpeg" (change)="onFileSelect($event)" style="display:none" />
+        <audio *ngIf="audioPreviewUrl" [src]="audioPreviewUrl" controls class="audio-preview"></audio>
+        <div class="action-row">
+          <button class="btn-main" (click)="submitAudio()" [disabled]="loading || !selectedFile">
+            {{ uploading ? '🎙️ Transcribing...' : loading ? 'Running agents...' : 'Upload & Analyze →' }}
+          </button>
+          <button class="btn-ghost" (click)="reset()">Clear</button>
+        </div>
+      </div>
+
+      <div class="error-msg" *ngIf="error">Warning: {{ error }}</div>
+
+      <!-- ══ LIVE AGENT STATUS BAR ══════════════════════════════════ -->
+      <div class="asb" *ngIf="loading || pipelineComplete">
+        <div class="asb-header">
+          <span class="asb-title">🔄 Live Agent Pipeline</span>
+          <span class="asb-live" *ngIf="loading">● LIVE</span>
+          <span class="asb-done" *ngIf="pipelineComplete">✅ COMPLETE</span>
+        </div>
+
+        <div class="asb-track">
+          <ng-container *ngFor="let agent of agents; let i = index">
+
+            <!-- Skip idle (whisper hidden in text mode) -->
+            <ng-container *ngIf="agent.status !== 'idle'">
+
+              <div class="asb-card"
+                [class.asb-waiting]="agent.status === 'waiting'"
+                [class.asb-running]="agent.status === 'running'"
+                [class.asb-done]="agent.status === 'done'">
+                <div class="asb-icon-wrap">
+                  <span class="asb-icon">{{ agent.icon }}</span>
+                  <div class="asb-ring" *ngIf="agent.status === 'running'"></div>
+                </div>
+                <div class="asb-info">
+                  <span class="asb-name">{{ agent.label }}</span>
+                  <span class="asb-sub waiting" *ngIf="agent.status === 'waiting'">Waiting...</span>
+                  <span class="asb-sub running" *ngIf="agent.status === 'running'">Running...</span>
+                  <span class="asb-sub done" *ngIf="agent.status === 'done'">Done ✓</span>
+                </div>
+              </div>
+
+              <!-- Arrow connector -->
+              <div class="asb-connector"
+                *ngIf="i < agents.length - 1 && agents[i+1].status !== 'idle'"
+                [class.connector-lit]="agent.status === 'done'">
+                <div class="connector-line"></div>
+                <div class="connector-arrow">›</div>
+              </div>
+
+            </ng-container>
+          </ng-container>
+        </div>
+
+        <!-- Current message -->
+        <div class="asb-msg" *ngIf="currentAgentMsg">{{ currentAgentMsg }}</div>
+
+        <!-- Progress bar -->
+        <div class="asb-bar" *ngIf="loading">
+          <div class="asb-bar-fill"></div>
+        </div>
+      </div>
+      <!-- ══════════════════════════════════════════════════════════ -->
+
+      <!-- RESULTS — appear as each agent completes -->
+
+      <!-- Transcription as chat -->
+      <div class="result-card" *ngIf="chatMessages.length > 0">
+        <div class="rc-header" style="background:#f5f3ff;border-color:#ede8ff">
+          <div class="rc-badge whisper">Whisper</div>
+          <h2 class="rc-title">🎙️ Conversation Transcript</h2>
+        </div>
+        <div class="chat-window">
+          <div class="chat-legend">
+            <span class="legend-item user-legend">🧑 You</span>
+            <span class="legend-item ai-legend">🤖 AI</span>
+          </div>
+          <div class="chat-messages">
+            <div *ngFor="let msg of chatMessages"
+              class="chat-bubble-row"
+              [class.user-row]="msg.role === 'user'"
+              [class.ai-row]="msg.role === 'ai'">
+              <div class="avatar ai-avatar" *ngIf="msg.role === 'ai'">🤖</div>
+              <div class="chat-bubble" [class.user-bubble]="msg.role === 'user'" [class.ai-bubble]="msg.role === 'ai'">
+                {{ msg.text }}
+              </div>
+              <div class="avatar user-avatar" *ngIf="msg.role === 'user'">🧑</div>
+            </div>
+          </div>
+        </div>
+        <div class="flow-arrow">Your speech → Agent Pipeline ↓</div>
+      </div>
+
+      <!-- Grammar result — appears the moment grammar agent completes -->
+      <div class="result-card agent-card-reveal" *ngIf="grammarResult">
+        <div class="rc-header">
+          <div class="rc-badge grammar">Agent 1</div>
+          <h2 class="rc-title">📝 Grammar Agent</h2>
+        </div>
+        <div class="rc-body">
+          <div class="compare-row">
+            <div class="compare-col">
+              <span class="compare-label">Original</span>
+              <p class="compare-text original-text">{{ grammarResult.original }}</p>
+            </div>
+            <div class="compare-arrow">→</div>
+            <div class="compare-col">
+              <span class="compare-label">Corrected</span>
+              <p class="compare-text corrected-text">{{ grammarResult.correctedText }}</p>
+            </div>
+          </div>
+          <div class="findings" *ngIf="grammarResult.mistakes.length > 0">
+            <p class="findings-label">❌ Mistakes found</p>
+            <ul class="findings-list">
+              <li *ngFor="let m of grammarResult.mistakes">{{ m }}</li>
+            </ul>
+          </div>
+          <div class="no-findings" *ngIf="grammarResult.mistakes.length === 0">✅ No grammar mistakes!</div>
+        </div>
+        <div class="flow-arrow" *ngIf="!vocabResult">⏳ Output waiting for Vocabulary Agent...</div>
+        <div class="flow-arrow" *ngIf="vocabResult">Output → Vocabulary Agent input ↓</div>
+      </div>
+
+      <!-- Vocabulary result — appears when vocab agent completes -->
+      <div class="result-card agent-card-reveal" *ngIf="vocabResult">
+        <div class="rc-header">
+          <div class="rc-badge vocabulary">Agent 2</div>
+          <h2 class="rc-title">📚 Vocabulary Agent</h2>
+        </div>
+        <div class="rc-body">
+          <div class="compare-row">
+            <div class="compare-col">
+              <span class="compare-label">Input (from Agent 1)</span>
+              <p class="compare-text original-text">{{ grammarResult?.correctedText }}</p>
+            </div>
+            <div class="compare-arrow">→</div>
+            <div class="compare-col">
+              <span class="compare-label">Enhanced</span>
+              <p class="compare-text corrected-text">{{ vocabResult.enhancedText }}</p>
+            </div>
+          </div>
+          <div class="findings" *ngIf="vocabResult.suggestions.length > 0">
+            <p class="findings-label">💡 Suggestions</p>
+            <ul class="findings-list">
+              <li *ngFor="let s of vocabResult.suggestions">{{ s }}</li>
+            </ul>
+          </div>
+        </div>
+        <div class="flow-arrow" *ngIf="!coachResult">Output waiting for Coach Agent...</div>
+        <div class="flow-arrow" *ngIf="coachResult">Agent 1 + Agent 2 -> Coach Agent</div>
+      </div>
+
+      <!-- Coach result -->
+      <div class="result-card agent-card-reveal" *ngIf="coachResult">
+        <div class="rc-header" style="background:#e8f0fa;border-color:#c8d8f0">
+          <div class="rc-badge coach">Agent 3</div>
+          <h2 class="rc-title">🎯 Coach Agent</h2>
+        </div>
+        <div class="rc-body">
+          <div class="coach-layout">
+            <div class="score-block">
+              <div class="score-ring" [style.border-color]="getScoreColor(coachResult.score)">
+                <span class="score-num" [style.color]="getScoreColor(coachResult.score)">{{ coachResult.score }}</span>
+                <span class="score-denom">/10</span>
+              </div>
+              <span class="score-label-text" [style.color]="getScoreColor(coachResult.score)">
+                {{ getScoreLabel(coachResult.score) }}
+              </span>
+            </div>
+            <div class="coach-text">
+              <p class="coach-summary">{{ coachResult.summary }}</p>
+              <p class="coach-encourage">💪 {{ coachResult.encouragement }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-arrow" *ngIf="loading && coachResult && !dailyTopicResult">Output waiting for Daily Topic Agent...</div>
+      <div class="flow-arrow" *ngIf="dailyTopicResult">Coach Agent -> Daily Topic Agent</div>
+
+      <div class="result-card agent-card-reveal" *ngIf="dailyTopicResult">
+        <div class="rc-header" style="background:#f7efe1;border-color:#e8d4b5">
+          <div class="rc-badge daily-topic">Agent 4</div>
+          <h2 class="rc-title">Daily Topic Agent</h2>
+        </div>
+        <div class="rc-body">
+          <div class="findings">
+            <p class="findings-label">Today's non-technical topic</p>
+            <p class="compare-text corrected-text">{{ dailyTopicResult.topic }}</p>
+          </div>
+          <div class="findings" style="margin-top:12px">
+            <p class="findings-label">Why this topic</p>
+            <p class="compare-text original-text">{{ dailyTopicResult.reason }}</p>
+          </div>
+          <div class="findings" style="margin-top:12px">
+            <p class="findings-label">Practice prompt</p>
+            <p class="compare-text">{{ dailyTopicResult.practicePrompt }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="result-card" *ngIf="authUser && ratingHistory.length > 0">
+        <div class="rc-header">
+          <div class="rc-badge coach">History</div>
+          <h2 class="rc-title">Your Practice Activity Log</h2>
+        </div>
+        <div class="rc-body">
+          <div class="history-row" *ngFor="let r of ratingHistory">
+            <span>{{ r.createdAt | date:'dd MMM, y HH:mm' }}</span>
+            <span>Score: <strong>{{ r.score }}/10</strong> ({{ r.label }})</span>
+            <span>{{ r.mode | titlecase }}</span>
+            <span>{{ r.inputTextSnippet }}</span>
+          </div>
+          <div class="history-pager">
+            <button class="btn-ghost" (click)="prevHistoryPage()" [disabled]="historyPage <= 1">Previous</button>
+            <span>Page {{ historyPage }} / {{ historyTotalPages }} ({{ historyTotal }} total)</span>
+            <button class="btn-ghost" (click)="nextHistoryPage()" [disabled]="historyPage >= historyTotalPages">Next</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Try again -->
+      <div class="try-again" *ngIf="pipelineComplete">
+        <button class="btn-ghost-lg" (click)="reset()">← Try another session</button>
+        <button class="chart-btn-lg" (click)="viewProgress()">📊 View Progress</button>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>Built with NestJS · Angular · Groq API · Whisper · SSE</p>
+  </footer>
+</div>
+
+
+
+
+

@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://communication-practice.vercel.app/sitemap.xml
