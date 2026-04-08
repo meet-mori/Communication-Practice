@@ -94,13 +94,23 @@
           </div>
           <input class="auth-input" *ngIf="authMode === 'register'" [(ngModel)]="authName" placeholder="Full name" />
           <input class="auth-input" [(ngModel)]="authEmail" placeholder="Email" />
-          <input class="auth-input" [(ngModel)]="authPassword" type="password" placeholder="Password (min 6 chars)" />
+          <div class="auth-password-wrap">
+            <input class="auth-input auth-password-input" [(ngModel)]="authPassword" [type]="showAuthPassword ? 'text' : 'password'" placeholder="Password (min 6 chars)" />
+            <button
+              type="button"
+              class="auth-password-toggle"
+              (click)="toggleAuthPassword()"
+              [attr.aria-label]="showAuthPassword ? 'Hide password' : 'Show password'"
+              [attr.title]="showAuthPassword ? 'Hide password' : 'Show password'"
+            >
+              {{ showAuthPassword ? '🙈' : '👁️' }}
+            </button>
+          </div>
           <div class="action-row">
             <button class="btn-main" (click)="submitAuth()" [disabled]="authBusy || !authEmail || !authPassword">
               {{ authBusy ? 'Please wait...' : (authMode === 'login' ? 'Login' : 'Create account') }}
             </button>
           </div>
-          <div class="error-msg" *ngIf="authError" style="margin-top:12px">{{ authError }}</div>
         </div>
 
         <div *ngIf="authUser" class="auth-ok">

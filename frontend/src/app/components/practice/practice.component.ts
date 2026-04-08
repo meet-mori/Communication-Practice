@@ -11,6 +11,7 @@ import {
   OrchestratorService,
   VocabularyResult,
 } from '../../services/orchestrator.service';
+import { ToastService } from '../../services/toast.service';
 
 type InputMode = 'text' | 'audio';
 
@@ -74,9 +75,9 @@ export class PracticeComponent implements OnInit, OnDestroy {
   authName = '';
   authEmail = '';
   authPassword = '';
+  showAuthPassword = false;
   authMode: 'login' | 'register' = 'login';
   authBusy = false;
-  authError = '';
 
   ratingHistory: ActivityItem[] = [];
   historyPage = 1;
@@ -84,7 +85,10 @@ export class PracticeComponent implements OnInit, OnDestroy {
   historyTotal = 0;
   historyTotalPages = 1;
 
-  constructor(private orchestrator: OrchestratorService) {
+  constructor(
+    private orchestrator: OrchestratorService,
+    private toast: ToastService,
+  ) {
     this.sessions = [];
   }
 
@@ -109,12 +113,15 @@ export class PracticeComponent implements OnInit, OnDestroy {
 
   setAuthMode(mode: 'login' | 'register') {
     this.authMode = mode;
-    this.authError = '';
+    this.showAuthPassword = false;
+  }
+
+  toggleAuthPassword() {
+    this.showAuthPassword = !this.showAuthPassword;
   }
 
   submitAuth() {
     this.authBusy = true;
-    this.authError = '';
 
     const req = this.authMode === 'register'
       ? this.orchestrator.register(this.authName, this.authEmail, this.authPassword)
@@ -132,7 +139,8 @@ export class PracticeComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.authBusy = false;
-        this.authError = err?.error?.message || 'Authentication failed';
+        const message = this.toast.extractErrorMessage(err, 'Authentication failed');
+        this.toast.error(message, 'Authentication', this.authMode === 'login' ? '/auth/login' : '/auth/register');
       },
     });
   }
@@ -141,12 +149,14 @@ export class PracticeComponent implements OnInit, OnDestroy {
     this.authToken = '';
     this.authUser = null;
     this.authPassword = '';
+    this.showAuthPassword = false;
     this.ratingHistory = [];
     this.historyPage = 1;
     this.historyTotal = 0;
     this.historyTotalPages = 1;
     this.sessions = [];
     localStorage.removeItem('ec_token');
+    this.toast.info('Logged out successfully.', 'Info', '/auth/logout');
   }
 
   private loadHistory(page = 1) {
@@ -205,10 +215,12 @@ export class PracticeComponent implements OnInit, OnDestroy {
     if (!f) return;
     if (!f.name.endsWith('.mp3') && f.type !== 'audio/mpeg') {
       this.error = 'MP3 only.';
+      this.toast.error(this.error, 'Validation', '/orchestrator/upload-audio');
       return;
     }
     if (f.size > 25 * 1024 * 1024) {
       this.error = 'Max 25MB.';
+      this.toast.error(this.error, 'Validation', '/orchestrator/upload-audio');
       return;
     }
     this.selectedFile = f;
@@ -220,6 +232,7 @@ export class PracticeComponent implements OnInit, OnDestroy {
   submitText() {
     if (!this.authToken) {
       this.error = 'Please login first.';
+      this.toast.info(this.error, 'Authentication', '/auth/login');
       return;
     }
     if (!this.userText.trim()) return;
@@ -230,6 +243,7 @@ export class PracticeComponent implements OnInit, OnDestroy {
       next: ev => this.handleEvent(ev),
       error: () => {
         this.error = 'Connection failed. Is backend running?';
+        this.toast.error(this.error, 'Pipeline Error', '/orchestrator/stream');
         this.loading = false;
       },
     });
@@ -238,6 +252,7 @@ export class PracticeComponent implements OnInit, OnDestroy {
   submitAudio() {
     if (!this.authToken) {
       this.error = 'Please login first.';
+      this.toast.info(this.error, 'Authentication', '/auth/login');
       return;
     }
     if (!this.selectedFile) return;
@@ -258,6 +273,7 @@ export class PracticeComponent implements OnInit, OnDestroy {
           next: ev => this.handleEvent(ev),
           error: () => {
             this.error = 'Pipeline failed.';
+            this.toast.error(this.error, 'Pipeline Error', '/orchestrator/stream');
             this.loading = false;
           },
         });
@@ -323,6 +339,7 @@ export class PracticeComponent implements OnInit, OnDestroy {
         this.loading = false;
         this.pipelineComplete = true;
         this.currentAgentMsg = '';
+        this.toast.success('Analysis completed successfully.', 'Completed', '/orchestrator/stream');
 
         if (ev?.data?.step4_daily_topic) {
           this.dailyTopicResult = ev.data.step4_daily_topic;
@@ -343,6 +360,7 @@ export class PracticeComponent implements OnInit, OnDestroy {
 
       case 'error':
         this.error = ev.message || 'Pipeline error';
+        this.toast.error(this.error, 'Pipeline Error', '/orchestrator/stream');
         this.loading = false;
         break;
     }
@@ -479,6 +497,7 @@ export class PracticeComponent implements OnInit, OnDestroy {
     this.coachResult = null;
     this.dailyTopicResult = null;
     this.chatMessages = [];
+    this.showAuthPassword = false;
     this.agents = this.agents.map(a => ({ ...a, status: 'idle' }));
   }
 

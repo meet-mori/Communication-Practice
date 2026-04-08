@@ -1,6 +1,7 @@
 import { Injectable, NgZone } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { catchError, Observable, tap, throwError } from 'rxjs';
+import { ToastService } from './toast.service';
 
 export interface GrammarResult {
   original: string;
@@ -80,26 +81,40 @@ export interface ActivityPage {
 
 @Injectable({ providedIn: 'root' })
 export class OrchestratorService {
-  private api = 'https://communication-practice-qdw2.onrender.com';
+  // private api = 'https://communication-practice-qdw2.onrender.com';
+  private api = 'http://localhost:3000';
 
-  constructor(private http: HttpClient, private zone: NgZone) { }
+  constructor(
+    private http: HttpClient,
+    private zone: NgZone,
+    private toast: ToastService,
+  ) { }
 
   private authHeaders(token: string) {
     return new HttpHeaders({ Authorization: `Bearer ${token}` });
   }
 
   register(name: string, email: string, password: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.api}/auth/register`, { name, email, password });
+    const path = '/auth/register';
+    return this.http.post<AuthResponse>(`${this.api}${path}`, { name, email, password }).pipe(
+      tap(() => this.toast.success('Account created successfully.', 'Success', path)),
+      this.handleHttpError(path, 'Registration failed.'),
+    );
   }
 
   login(email: string, password: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.api}/auth/login`, { email, password });
+    const path = '/auth/login';
+    return this.http.post<AuthResponse>(`${this.api}${path}`, { email, password }).pipe(
+      tap(() => this.toast.success('Welcome back! Login successful.', 'Success', path)),
+      this.handleHttpError(path, 'Login failed.'),
+    );
   }
 
   me(token: string): Observable<{ user: AuthUser }> {
+    const path = '/auth/me';
     return this.http.get<{ user: AuthUser }>(`${this.api}/auth/me`, {
       headers: this.authHeaders(token),
-    });
+    }).pipe(this.handleHttpError(path, 'Failed to load user profile.'));
   }
 
   saveActivity(
@@ -112,16 +127,21 @@ export class OrchestratorService {
       topicSuggestion?: string | null;
     },
   ): Observable<{ ok: boolean }> {
-    return this.http.post<{ ok: boolean }>(`${this.api}/activity`, payload, {
+    const path = '/activity';
+    return this.http.post<{ ok: boolean }>(`${this.api}${path}`, payload, {
       headers: this.authHeaders(token),
-    });
+    }).pipe(
+      tap(() => this.toast.success('Session saved to history.', 'Saved', path)),
+      this.handleHttpError(path, 'Unable to save session.'),
+    );
   }
 
   myActivities(token: string, page = 1, limit = 20): Observable<ActivityPage> {
+    const path = '/activity/me';
     return this.http.get<ActivityPage>(
       `${this.api}/activity/me?page=${page}&limit=${limit}`,
       { headers: this.authHeaders(token) },
-    );
+    ).pipe(this.handleHttpError(path, 'Unable to load activity history.'));
   }
 
   // Text mode — direct SSE stream
@@ -134,10 +154,11 @@ export class OrchestratorService {
   uploadAudio(file: File): Observable<{ sessionId: string; transcription: string }> {
     const form = new FormData();
     form.append('audio', file);
+    const path = '/orchestrator/upload-audio';
     return this.http.post<{ sessionId: string; transcription: string }>(
-      `${this.api}/orchestrator/upload-audio`,
+      `${this.api}${path}`,
       form,
-    );
+    ).pipe(this.handleHttpError(path, 'Audio upload failed.'));
   }
 
   // Audio mode — Step 2: stream pipeline using sessionId
@@ -178,5 +199,15 @@ export class OrchestratorService {
       // Cleanup when unsubscribed
       return () => eventSource.close();
     });
+  }
+
+  private handleHttpError(path: string, fallbackMessage: string) {
+    return <T>(source: Observable<T>) => source.pipe(
+      catchError((error: unknown) => {
+        const message = this.toast.extractErrorMessage(error, fallbackMessage);
+        this.toast.error(message, 'Request Failed', path);
+        return throwError(() => error);
+      }),
+    );
   }
 }

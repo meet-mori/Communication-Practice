@@ -72,11 +72,11 @@ export class AuthService {
     const cleanEmail = (email || '').trim().toLowerCase();
     const user = await this.mongo.users().findOne({ email: cleanEmail });
     if (!user) {
-      throw new HttpException('User not registered. Please register first.', HttpStatus.UNAUTHORIZED);
+      throw new HttpException('Invalid email or password!.', HttpStatus.UNAUTHORIZED);
     }
 
     if (!this.verifyPassword(password || '', user.passwordHash)) {
-      throw new HttpException('Invalid email or password', HttpStatus.UNAUTHORIZED);
+      throw new HttpException('Invalid email or password!', HttpStatus.UNAUTHORIZED);
     }
     const token = await this.createSession(user._id as ObjectId);
     return { token, user: this.toSafeUser(user as UserDoc & { _id: ObjectId }) };

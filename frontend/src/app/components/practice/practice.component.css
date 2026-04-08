@@ -84,6 +84,11 @@
 .action-row{display:flex;gap:12px;margin-top:16px;align-items:center;flex-wrap:wrap}
 .auth-input{width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;margin-top:10px;background:var(--paper)}
 .auth-input:focus{outline:none;border-color:var(--ink)}
+.auth-password-wrap{position:relative;margin-top:10px}
+.auth-password-wrap .auth-input{margin-top:0}
+.auth-password-input{padding-right:48px}
+.auth-password-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);border:none;background:transparent;cursor:pointer;font-size:18px;line-height:1;color:var(--muted)}
+.auth-password-toggle:hover{color:var(--ink)}
 .auth-ok{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .btn-main{padding:14px 28px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;transition:all .2s;flex:1;min-width:200px}
 .btn-main:hover:not(:disabled){background:#b84015;transform:translateY(-1px)}
