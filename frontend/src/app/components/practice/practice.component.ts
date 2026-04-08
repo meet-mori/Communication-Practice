@@ -75,7 +75,9 @@ export class PracticeComponent implements OnInit, OnDestroy {
   authName = '';
   authEmail = '';
   authPassword = '';
+  authConfirmPassword = '';
   showAuthPassword = false;
+  showAuthConfirmPassword = false;
   authMode: 'login' | 'register' = 'login';
   authBusy = false;
 
@@ -113,19 +115,87 @@ export class PracticeComponent implements OnInit, OnDestroy {
 
   setAuthMode(mode: 'login' | 'register') {
     this.authMode = mode;
+    this.authConfirmPassword = '';
     this.showAuthPassword = false;
+    this.showAuthConfirmPassword = false;
   }
 
   toggleAuthPassword() {
     this.showAuthPassword = !this.showAuthPassword;
   }
 
+  toggleAuthConfirmPassword() {
+    this.showAuthConfirmPassword = !this.showAuthConfirmPassword;
+  }
+
+  private isValidEmail(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  }
+
+  private isValidPassword(password: string): boolean {
+    // Keep validation simple and aligned with current UI hint.
+    return password.length >= 6;
+  }
+
+  private get authEmailTrimmed(): string {
+    return this.authEmail.trim();
+  }
+
+  private validateAuthForm(): string | null {
+    if (this.authMode === 'register' && !this.authName.trim()) {
+      return 'Please enter your full name.';
+    }
+
+    if (!this.authEmailTrimmed) {
+      return 'Please enter your email address.';
+    }
+
+    if (!this.isValidEmail(this.authEmailTrimmed)) {
+      return 'Please enter a valid email address.';
+    }
+
+    if (!this.authPassword) {
+      return 'Please enter your password.';
+    }
+
+    if (!this.isValidPassword(this.authPassword)) {
+      return 'Password must be at least 6 characters long.';
+    }
+
+    if (this.authMode === 'register' && !this.authConfirmPassword) {
+      return 'Please confirm your password.';
+    }
+
+    if (this.authMode === 'register' && this.authPassword !== this.authConfirmPassword) {
+      return 'Passwords do not match. Please re-enter and try again.';
+    }
+
+    return null;
+  }
+
+  get canSubmitAuth() {
+    return this.validateAuthForm() === null;
+  }
+
   submitAuth() {
+    if (this.authBusy) {
+      return;
+    }
+
+    const validationMessage = this.validateAuthForm();
+    if (validationMessage) {
+      this.toast.error(validationMessage, 'Validation', this.authMode === 'login' ? '/auth/login' : '/auth/register');
+      return;
+    }
+
     this.authBusy = true;
 
+    const email = this.authEmailTrimmed;
+    const name = this.authName.trim();
+
     const req = this.authMode === 'register'
-      ? this.orchestrator.register(this.authName, this.authEmail, this.authPassword)
-      : this.orchestrator.login(this.authEmail, this.authPassword);
+      ? this.orchestrator.register(name, email, this.authPassword)
+      : this.orchestrator.login(email, this.authPassword);
 
     req.subscribe({
       next: ({ token, user }) => {
@@ -134,6 +204,7 @@ export class PracticeComponent implements OnInit, OnDestroy {
         this.authUser = user;
         localStorage.setItem('ec_token', token);
         this.authPassword = '';
+        this.authConfirmPassword = '';
         this.loadHistory(1);
         this.loadChartData();
       },
@@ -145,11 +216,20 @@ export class PracticeComponent implements OnInit, OnDestroy {
     });
   }
 
+  get isRegisterPasswordMismatch() {
+    return this.authMode === 'register'
+      && !!this.authPassword
+      && !!this.authConfirmPassword
+      && this.authPassword !== this.authConfirmPassword;
+  }
+
   logout() {
     this.authToken = '';
     this.authUser = null;
     this.authPassword = '';
+    this.authConfirmPassword = '';
     this.showAuthPassword = false;
+    this.showAuthConfirmPassword = false;
     this.ratingHistory = [];
     this.historyPage = 1;
     this.historyTotal = 0;
@@ -498,6 +578,8 @@ export class PracticeComponent implements OnInit, OnDestroy {
     this.dailyTopicResult = null;
     this.chatMessages = [];
     this.showAuthPassword = false;
+    this.showAuthConfirmPassword = false;
+    this.authConfirmPassword = '';
     this.agents = this.agents.map(a => ({ ...a, status: 'idle' }));
   }
 
