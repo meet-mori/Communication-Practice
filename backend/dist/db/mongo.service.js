@@ -18,15 +18,29 @@ let MongoService = class MongoService {
         this.config = config;
     }
     async onModuleInit() {
-        const uri = this.config.get('MONGODB_URI') || 'mongodb+srv://Meet_Mori:Meet%4099099@cluster0.zljbnwf.mongodb.net/english_coach';
+        const uri = this.config.get('MONGODB_URI') || 'mongodb+srv://Meet_Mori:Meet%4099099@cluster0.zljbnwf.mongodb.net/english_coach?retryWrites=true&w=majority';
         const dbName = this.config.get('MONGODB_DB') || 'english_coach';
-        this.client = new mongodb_1.MongoClient(uri);
-        await this.client.connect();
-        this.db = this.client.db(dbName);
-        await this.users().createIndex({ email: 1 }, { unique: true });
-        await this.sessions().createIndex({ token: 1 }, { unique: true });
-        await this.sessions().createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-        await this.activities().createIndex({ userId: 1, createdAt: -1 });
+        const sanitizedUri = uri.replace(/:([^@/]+)@/, ':****@');
+        console.log(`Connecting to MongoDB: ${sanitizedUri}`);
+        this.client = new mongodb_1.MongoClient(uri, {
+            tls: true,
+            family: 4,
+            serverSelectionTimeoutMS: 10000,
+            connectTimeoutMS: 10000,
+        });
+        try {
+            await this.client.connect();
+            this.db = this.client.db(dbName);
+            console.log('MongoDB connection successful');
+            await this.users().createIndex({ email: 1 }, { unique: true });
+            await this.sessions().createIndex({ token: 1 }, { unique: true });
+            await this.sessions().createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+            await this.activities().createIndex({ userId: 1, createdAt: -1 });
+        }
+        catch (error) {
+            console.error('MongoDB connection error:', error.message);
+            throw new Error(`Failed to connect to MongoDB: ${error.message}`);
+        }
     }
     async onModuleDestroy() {
         if (this.client)
