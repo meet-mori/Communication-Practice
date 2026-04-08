@@ -99,7 +99,7 @@ export class PracticeComponent implements OnInit, OnDestroy {
     if (!token) return;
 
     this.authToken = token;
-    this.orchestrator.me(token).subscribe({
+    this.orchestrator.me().subscribe({
       next: ({ user }) => {
         this.authUser = user;
         this.loadHistory(1);
@@ -241,7 +241,7 @@ export class PracticeComponent implements OnInit, OnDestroy {
 
   private loadHistory(page = 1) {
     if (!this.authToken) return;
-    this.orchestrator.myActivities(this.authToken, page, this.historyLimit).subscribe({
+    this.orchestrator.myActivities(page, this.historyLimit).subscribe({
       next: (res) => {
         this.ratingHistory = res.items;
         this.historyPage = res.pagination.page;
@@ -258,7 +258,7 @@ export class PracticeComponent implements OnInit, OnDestroy {
 
   private loadChartData() {
     if (!this.authToken) return;
-    this.orchestrator.myActivities(this.authToken, 1, 5000).subscribe({
+    this.orchestrator.myActivities(1, 5000).subscribe({
       next: (res) => this.syncSessionsFromHistory(res.items),
       error: () => { this.sessions = []; },
     });
@@ -449,7 +449,7 @@ export class PracticeComponent implements OnInit, OnDestroy {
   private persistActivity() {
     if (!this.authToken || !this.coachResult) return;
 
-    this.orchestrator.saveActivity(this.authToken, {
+    this.orchestrator.saveActivity({
       score: this.coachResult.score,
       mode: this.inputMode,
       inputText: this.userText || '',

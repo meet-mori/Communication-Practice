@@ -18,6 +18,7 @@ const platform_express_1 = require("@nestjs/platform-express");
 const rxjs_1 = require("rxjs");
 const orchestrator_service_1 = require("./orchestrator.service");
 const whisper_service_1 = require("../upload/whisper.service");
+const response_envelope_decorator_1 = require("../common/response-envelope.decorator");
 const pendingTranscriptions = new Map();
 let OrchestratorController = class OrchestratorController {
     constructor(service, whisper) {
@@ -66,6 +67,7 @@ __decorate([
 ], OrchestratorController.prototype, "uploadAudio", null);
 __decorate([
     (0, common_1.Sse)('stream'),
+    (0, response_envelope_decorator_1.SkipResponseEnvelope)(),
     __param(0, (0, common_1.Query)('sessionId')),
     __param(1, (0, common_1.Query)('text')),
     __param(2, (0, common_1.Query)('isAudio')),

@@ -1,11 +1,15 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
 import { ObjectId } from 'mongodb';
 import { MongoService, UserDoc } from '../db/mongo.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private mongo: MongoService) {}
+  constructor(
+    private mongo: MongoService,
+    private jwtService: JwtService,
+  ) {}
 
   private hashPassword(password: string): string {
     const salt = randomBytes(16).toString('hex');
@@ -28,17 +32,12 @@ export class AuthService {
     };
   }
 
-  private async createSession(userId: ObjectId): Promise<string> {
-    const token = randomBytes(32).toString('hex');
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-    await this.mongo.sessions().insertOne({
-      userId,
-      token,
-      createdAt: now,
-      expiresAt,
+  private async createToken(user: UserDoc & { _id: ObjectId }): Promise<string> {
+    return this.jwtService.signAsync({
+      sub: user._id.toString(),
+      email: user.email,
+      name: user.name,
     });
-    return token;
   }
 
   async register(name: string, email: string, password: string) {
@@ -64,8 +63,9 @@ export class AuthService {
     });
 
     const user = await this.mongo.users().findOne({ _id: result.insertedId });
-    const token = await this.createSession(result.insertedId);
-    return { token, user: this.toSafeUser(user as UserDoc & { _id: ObjectId }) };
+    const safeUser = this.toSafeUser(user as UserDoc & { _id: ObjectId });
+    const token = await this.createToken(user as UserDoc & { _id: ObjectId });
+    return { token, user: safeUser };
   }
 
   async login(email: string, password: string) {
@@ -78,20 +78,24 @@ export class AuthService {
     if (!this.verifyPassword(password || '', user.passwordHash)) {
       throw new HttpException('Invalid email or password!', HttpStatus.UNAUTHORIZED);
     }
-    const token = await this.createSession(user._id as ObjectId);
-    return { token, user: this.toSafeUser(user as UserDoc & { _id: ObjectId }) };
+    const safeUser = this.toSafeUser(user as UserDoc & { _id: ObjectId });
+    const token = await this.createToken(user as UserDoc & { _id: ObjectId });
+    return { token, user: safeUser };
   }
 
   async getUserFromToken(token: string) {
     if (!token) return null;
-    const session = await this.mongo.sessions().findOne({ token });
-    if (!session || session.expiresAt < new Date()) return null;
-    const user = await this.mongo.users().findOne({ _id: session.userId });
-    if (!user) {
-      await this.mongo.sessions().deleteOne({ _id: session._id });
+    try {
+      const payload = await this.jwtService.verifyAsync<{ sub?: string }>(token);
+      if (!payload?.sub) return null;
+
+      const user = await this.mongo.users().findOne({ _id: new ObjectId(payload.sub) });
+      if (!user) return null;
+
+      return this.toSafeUser(user as UserDoc & { _id: ObjectId });
+    } catch {
       return null;
     }
-    return this.toSafeUser(user as UserDoc & { _id: ObjectId });
   }
 
   async requireUser(token: string) {

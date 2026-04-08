@@ -1,11 +1,13 @@
+import { JwtService } from '@nestjs/jwt';
 import { MongoService } from '../db/mongo.service';
 export declare class AuthService {
     private mongo;
-    constructor(mongo: MongoService);
+    private jwtService;
+    constructor(mongo: MongoService, jwtService: JwtService);
     private hashPassword;
     private verifyPassword;
     private toSafeUser;
-    private createSession;
+    private createToken;
     register(name: string, email: string, password: string): Promise<{
         token: string;
         user: {

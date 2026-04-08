@@ -8,13 +8,6 @@ export interface UserDoc {
     passwordHash: string;
     createdAt: Date;
 }
-export interface SessionDoc {
-    _id?: ObjectId;
-    userId: ObjectId;
-    token: string;
-    createdAt: Date;
-    expiresAt: Date;
-}
 export interface ActivityDoc {
     _id?: ObjectId;
     userId: ObjectId;
@@ -34,6 +27,5 @@ export declare class MongoService implements OnModuleInit, OnModuleDestroy {
     onModuleInit(): Promise<void>;
     onModuleDestroy(): Promise<void>;
     users(): Collection<UserDoc>;
-    sessions(): Collection<SessionDoc>;
     activities(): Collection<ActivityDoc>;
 }

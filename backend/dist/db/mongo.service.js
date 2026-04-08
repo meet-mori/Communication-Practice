@@ -33,8 +33,6 @@ let MongoService = class MongoService {
             this.db = this.client.db(dbName);
             console.log('MongoDB connection successful');
             await this.users().createIndex({ email: 1 }, { unique: true });
-            await this.sessions().createIndex({ token: 1 }, { unique: true });
-            await this.sessions().createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
             await this.activities().createIndex({ userId: 1, createdAt: -1 });
         }
         catch (error) {
@@ -48,9 +46,6 @@ let MongoService = class MongoService {
     }
     users() {
         return this.db.collection('users');
-    }
-    sessions() {
-        return this.db.collection('sessions');
     }
     activities() {
         return this.db.collection('activities');

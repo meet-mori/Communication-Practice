@@ -1,5 +1,5 @@
 import { Injectable, NgZone } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { catchError, Observable, tap, throwError } from 'rxjs';
 import { ToastService } from './toast.service';
 
@@ -81,18 +81,14 @@ export interface ActivityPage {
 
 @Injectable({ providedIn: 'root' })
 export class OrchestratorService {
-  // private api = 'https://communication-practice-qdw2.onrender.com';
-  private api = 'http://localhost:3000';
+  private api = 'https://communication-practice-qdw2.onrender.com';
+  // private api = 'http://localhost:3000';
 
   constructor(
     private http: HttpClient,
     private zone: NgZone,
     private toast: ToastService,
   ) { }
-
-  private authHeaders(token: string) {
-    return new HttpHeaders({ Authorization: `Bearer ${token}` });
-  }
 
   register(name: string, email: string, password: string): Observable<AuthResponse> {
     const path = '/auth/register';
@@ -110,15 +106,14 @@ export class OrchestratorService {
     );
   }
 
-  me(token: string): Observable<{ user: AuthUser }> {
+  me(): Observable<{ user: AuthUser }> {
     const path = '/auth/me';
-    return this.http.get<{ user: AuthUser }>(`${this.api}/auth/me`, {
-      headers: this.authHeaders(token),
-    }).pipe(this.handleHttpError(path, 'Failed to load user profile.'));
+    return this.http.get<{ user: AuthUser }>(`${this.api}/auth/me`).pipe(
+      this.handleHttpError(path, 'Failed to load user profile.'),
+    );
   }
 
   saveActivity(
-    token: string,
     payload: {
       score: number;
       mode: 'text' | 'audio';
@@ -128,20 +123,19 @@ export class OrchestratorService {
     },
   ): Observable<{ ok: boolean }> {
     const path = '/activity';
-    return this.http.post<{ ok: boolean }>(`${this.api}${path}`, payload, {
-      headers: this.authHeaders(token),
-    }).pipe(
+    return this.http.post<{ ok: boolean }>(`${this.api}${path}`, payload).pipe(
       tap(() => this.toast.success('Session saved to history.', 'Saved', path)),
       this.handleHttpError(path, 'Unable to save session.'),
     );
   }
 
-  myActivities(token: string, page = 1, limit = 20): Observable<ActivityPage> {
+  myActivities(page = 1, limit = 20): Observable<ActivityPage> {
     const path = '/activity/me';
     return this.http.get<ActivityPage>(
       `${this.api}/activity/me?page=${page}&limit=${limit}`,
-      { headers: this.authHeaders(token) },
-    ).pipe(this.handleHttpError(path, 'Unable to load activity history.'));
+    ).pipe(
+      this.handleHttpError(path, 'Unable to load activity history.'),
+    );
   }
 
   // Text mode — direct SSE stream

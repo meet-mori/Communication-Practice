@@ -10,14 +10,6 @@ export interface UserDoc {
   createdAt: Date;
 }
 
-export interface SessionDoc {
-  _id?: ObjectId;
-  userId: ObjectId;
-  token: string;
-  createdAt: Date;
-  expiresAt: Date;
-}
-
 export interface ActivityDoc {
   _id?: ObjectId;
   userId: ObjectId;
@@ -58,8 +50,6 @@ export class MongoService implements OnModuleInit, OnModuleDestroy {
       console.log('MongoDB connection successful');
 
       await this.users().createIndex({ email: 1 }, { unique: true });
-      await this.sessions().createIndex({ token: 1 }, { unique: true });
-      await this.sessions().createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
       await this.activities().createIndex({ userId: 1, createdAt: -1 });
     } catch (error) {
       console.error('MongoDB connection error:', error.message);
@@ -74,10 +64,6 @@ export class MongoService implements OnModuleInit, OnModuleDestroy {
 
   users(): Collection<UserDoc> {
     return this.db.collection<UserDoc>('users');
-  }
-
-  sessions(): Collection<SessionDoc> {
-    return this.db.collection<SessionDoc>('sessions');
   }
 
   activities(): Collection<ActivityDoc> {

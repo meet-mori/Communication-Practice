@@ -17,6 +17,7 @@ import { Observable, map } from 'rxjs';
 import { OrchestratorService } from './orchestrator.service';
 import { WhisperService } from '../upload/whisper.service';
 import { Response } from 'express';
+import { SkipResponseEnvelope } from '../common/response-envelope.decorator';
 
 // In-memory store for audio transcriptions waiting for SSE
 const pendingTranscriptions = new Map<string, string>();
@@ -52,6 +53,7 @@ export class OrchestratorController {
 
   // ── Step 2: SSE stream — connect and receive live agent events ─────────
   @Sse('stream')
+  @SkipResponseEnvelope()
   streamPipeline(
     @Query('sessionId') sessionId: string,
     @Query('text') text: string,
@@ -77,7 +79,7 @@ export class OrchestratorController {
       .runPipelineSSE(userText, isAudioBool, transcription)
       .pipe(
         map(event => ({
-          data: JSON.stringify(event),  // SSE data must be a string
+          data: JSON.stringify(event),
         } as MessageEvent)),
       );
   }
