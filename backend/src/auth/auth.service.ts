@@ -55,16 +55,30 @@ export class AuthService {
       throw new HttpException('Email already registered', HttpStatus.CONFLICT);
     }
 
-    const result = await this.mongo.users().insertOne({
-      name: cleanName,
-      email: cleanEmail,
-      passwordHash: this.hashPassword(password),
-      createdAt: new Date(),
-    });
+    let result;
+    try {
+      result = await this.mongo.users().insertOne({
+        name: cleanName,
+        email: cleanEmail,
+        passwordHash: this.hashPassword(password),
+        createdAt: new Date(),
+      });
+    } catch (error: any) {
+      // Handle race condition: duplicate email from concurrent registration
+      if (error.code === 11000) {
+        throw new HttpException('Email already registered', HttpStatus.CONFLICT);
+      }
+      throw error;
+    }
 
     const user = await this.mongo.users().findOne({ _id: result.insertedId });
-    const safeUser = this.toSafeUser(user as UserDoc & { _id: ObjectId });
-    const token = await this.createToken(user as UserDoc & { _id: ObjectId });
+    if (!user) {
+      throw new HttpException('Failed to retrieve created user', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    const typedUser = user as UserDoc & { _id: ObjectId };
+    const safeUser = this.toSafeUser(typedUser);
+    const token = await this.createToken(typedUser);
     return { token, user: safeUser };
   }
 
@@ -92,7 +106,7 @@ export class AuthService {
       const user = await this.mongo.users().findOne({ _id: new ObjectId(payload.sub) });
       if (!user) return null;
 
-      return this.toSafeUser(user as UserDoc & { _id: ObjectId });
+      return this.toSafeUser(user as UserDoc & { _id: ObjectId }); 
     } catch {
       return null;
     }

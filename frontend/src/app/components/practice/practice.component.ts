@@ -86,6 +86,7 @@ export class PracticeComponent implements OnInit, OnDestroy {
   historyLimit = 5;
   historyTotal = 0;
   historyTotalPages = 1;
+  historySizeOptions: number[] = [5, 10, 15, 20, 25];
 
   constructor(
     private orchestrator: OrchestratorService,
@@ -283,6 +284,12 @@ export class PracticeComponent implements OnInit, OnDestroy {
   nextHistoryPage() {
     if (this.historyPage >= this.historyTotalPages) return;
     this.loadHistory(this.historyPage + 1);
+  }
+
+  changeHistoryPageSize(newSize: number) {
+    this.historyLimit = newSize;
+    this.historyPage = 1;
+    this.loadHistory(1);
   }
 
   setMode(m: InputMode) {
