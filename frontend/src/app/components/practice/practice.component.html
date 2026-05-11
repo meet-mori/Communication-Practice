@@ -378,16 +378,24 @@
             <span>{{ r.inputTextSnippet }}</span>
           </div>
           <div class="history-pager">
-            <div class="pager-controls">
-              <button class="btn-ghost" (click)="prevHistoryPage()" [disabled]="historyPage <= 1">Previous</button>
-              <span>Page {{ historyPage }} / {{ historyTotalPages }} ({{ historyTotal }} total)</span>
-              <button class="btn-ghost" (click)="nextHistoryPage()" [disabled]="historyPage >= historyTotalPages">Next</button>
+            <div class="pager-summary">
+              <span class="pager-kicker">Activity range</span>
+              <div class="pager-stats">
+                <span class="pager-pill">{{ historyShowingStart }}-{{ historyShowingEnd }}</span>
+                <span class="pager-divider">of</span>
+                <span class="pager-total">{{ historyTotal }}</span>
+              </div>
+              <span class="pager-page-label">{{ historyPageLabel }}</span>
             </div>
             <div class="pager-size-selector">
-              <label for="page-size-select" class="size-label">Items per page:</label>
+              <label for="page-size-select" class="size-label">Items per page</label>
               <select id="page-size-select" class="size-select" [(ngModel)]="historyLimit" (change)="changeHistoryPageSize(historyLimit)">
-                <option *ngFor="let size of historySizeOptions" [value]="size">{{ size }}</option>
+                <option *ngFor="let size of historySizeOptions" [ngValue]="size">{{ size }}</option>
               </select>
+            </div>
+            <div class="pager-controls">
+              <button class="pager-btn" (click)="prevHistoryPage()" [disabled]="historyPage <= 1">← Previous</button>
+              <button class="pager-btn pager-btn-primary" (click)="nextHistoryPage()" [disabled]="historyPage >= historyTotalPages">Next →</button>
             </div>
           </div>
         </div>

@@ -1,5 +1,8 @@
 node_modules/
-dist/
+backend/dist/
 .env
 .angular/
 .github/
+frontend/angular
+graphify-out/
+.vscode/

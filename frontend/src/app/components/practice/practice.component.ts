@@ -286,6 +286,21 @@ export class PracticeComponent implements OnInit, OnDestroy {
     this.loadHistory(this.historyPage + 1);
   }
 
+  get historyShowingStart() {
+    if (!this.historyTotal) return 0;
+    return (this.historyPage - 1) * this.historyLimit + 1;
+  }
+
+  get historyShowingEnd() {
+    return Math.min(this.historyPage * this.historyLimit, this.historyTotal);
+  }
+
+  get historyPageLabel() {
+    return this.historyTotal
+      ? `Page ${this.historyPage} of ${this.historyTotalPages}`
+      : 'No history yet';
+  }
+
   changeHistoryPageSize(newSize: number) {
     this.historyLimit = newSize;
     this.historyPage = 1;
